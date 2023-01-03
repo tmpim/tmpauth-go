@@ -311,3 +311,16 @@ func (t *Tmpauth) authFromCookie(r *http.Request) (*CachedToken, error) {
 
 	return t.ParseWrappedAuthJWT(cookie.Value)
 }
+
+// Stdlib returns a http.Handler compatible version of the Tmpauth middleware.
+func (t *Tmpauth) Stdlib() *TmpauthStdlib {
+	return &TmpauthStdlib{Tmpauth: t}
+}
+
+type TmpauthStdlib struct {
+	*Tmpauth
+}
+
+func (t *TmpauthStdlib) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	t.ServeHTTP(w, r)
+}
