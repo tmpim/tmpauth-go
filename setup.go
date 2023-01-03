@@ -17,6 +17,22 @@ const (
 	TmpAuthHost = "auth.tmpim.pw"
 )
 
+type CaddyHandleFunc func(w http.ResponseWriter, r *http.Request) (int, error)
+
+func FromHTTPHandler(h http.Handler) CaddyHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) (int, error) {
+		h.ServeHTTP(w, r)
+		return 0, nil
+	}
+}
+
+func FromHTTPHandleFunc(h http.HandlerFunc) CaddyHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) (int, error) {
+		h(w, r)
+		return 0, nil
+	}
+}
+
 type StateIDSession struct {
 	RedirectURI string
 	ExpiresAt   time.Time
@@ -24,7 +40,7 @@ type StateIDSession struct {
 
 type Tmpauth struct {
 	// We use a Caddy style HandleFunc for middleware.
-	Next       func(w http.ResponseWriter, r *http.Request) (int, error)
+	Next       CaddyHandleFunc
 	Config     *Config
 	TokenCache map[[32]byte]*CachedToken
 	HttpClient *http.Client
@@ -48,7 +64,7 @@ var (
 // NewTmpauth creates a new tmpauth handler. Although this can be used as a middleware, it doesn't
 // have to be. For example you can leave most Config options unset, and use ParseWrappedAuthJWT
 // to validate tokens.
-func NewTmpauth(cfg *Config, next http.HandlerFunc) *Tmpauth {
+func NewTmpauth(cfg *Config, next CaddyHandleFunc) *Tmpauth {
 	if cfg.Logger == nil {
 		cfg.Logger = DefaultLogger
 	}
@@ -69,6 +85,7 @@ func NewTmpauth(cfg *Config, next http.HandlerFunc) *Tmpauth {
 
 	done := make(chan struct{})
 	t := &Tmpauth{
+		Next:         next,
 		Config:       cfg,
 		HttpClient:   &newClient,
 		TokenCache:   make(map[[32]byte]*CachedToken),
