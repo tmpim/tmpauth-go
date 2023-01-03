@@ -38,17 +38,17 @@ type Config struct {
 // UnserializableConfig is a convenience struct for unmarshalling config from JSON like formats
 // and validating them into a Config.
 type UnserializableConfig struct {
-	PublicKey             string                   `json:"public_key"`
+	PublicKey             string                   `json:"publicKey"`
 	Token                 string                   `json:"secret"`
-	AllowedUsers          []string                 `json:"allowed_users"`
-	IDFormats             []string                 `json:"id_formats"`
+	AllowedUsers          []string                 `json:"allowedUsers"`
+	IDFormats             []string                 `json:"idFormats"`
 	Except                []string                 `json:"except"`
 	Include               []string                 `json:"include"`
 	Headers               map[string]*HeaderOption `json:"headers"`
 	Redirect              string                   `json:"redirect"`
 	Host                  string                   `json:"host"`
 	Debug                 bool                     `json:"debug"`
-	CaseSensitiveMatching bool                     `json:"case_sensitive_matching"`
+	CaseSensitiveMatching bool                     `json:"caseSensitiveMatching"`
 }
 
 type configClaims struct {
