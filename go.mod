@@ -3,7 +3,7 @@ module github.com/tmpim/tmpauth-go
 go 1.19
 
 require (
-	github.com/1lann/gjson v0.0.0-20230104091338-7c5b1b1e7f3c
+	github.com/1lann/gjson v0.0.0-20230104092549-cea68e957c09
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 )
 
