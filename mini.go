@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
-	"github.com/cockroachdb/errors"
 )
 
 type MiniConfig struct {
@@ -41,7 +39,7 @@ func NewMini(config *MiniConfig, next CaddyHandleFunc) (*Tmpauth, error) {
 
 	tmpauthConfig, err := json.Marshal(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal config")
+		return nil, fmt.Errorf("failed to marshal config: %w", err)
 	}
 
 	for i := 0; i < 5; i++ {
