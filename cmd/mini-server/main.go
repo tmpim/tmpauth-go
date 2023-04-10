@@ -188,6 +188,33 @@ func main() {
 		}{tmpauth.MinValidationTime().UnixMilli()})
 	})
 
+	http.HandleFunc("/tmpauth/whomst", func(w http.ResponseWriter, r *http.Request) {
+		configID := r.Header.Get(tmpauth.ConfigIDHeader)
+		if configID == "" {
+			log.Println("missing config ID")
+			http.Error(w, "missing config ID", http.StatusBadRequest)
+			return
+		}
+
+		ta, ok := tmpauthInstances[configID]
+		if !ok {
+			log.Println("invalid config ID:", configID)
+			http.Error(w, "invalid config ID", http.StatusBadRequest)
+			return
+		}
+
+		whomstData, err := ta.Whomst()
+		if err != nil {
+			log.Println("error getting whomst:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(whomstData)
+	})
+
 	log.Println("starting server on :4600")
 	http.ListenAndServe(":4600", nil)
 }
