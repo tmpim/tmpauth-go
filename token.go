@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/tmpim/tmpauth-go/microtoken"
 )
 
 type CachedToken struct {
@@ -49,6 +50,20 @@ func (w *wrappedToken) Valid() error {
 const ConfigIDHeader = "X-Tmpauth-Config-Id"
 const RequestURIHeader = "X-Tmpauth-Request-URI"
 const HostHeader = "X-Tmpauth-Host"
+
+func (t *Tmpauth) ParseWrappedMicrotoken(tokenStr string) (*CachedToken, error) {
+	codec := &microtoken.Codec{
+		AuthDomain: TmpAuthHost,
+		ClientID:   t.Config.ClientID,
+	}
+
+	wrappedJWT, err := codec.DecodeToken(microtoken.HS256Header, []byte(tokenStr))
+	if err != nil {
+		return nil, fmt.Errorf("tmpauth: failed to decode wrapped microtoken: %w", err)
+	}
+
+	return t.ParseWrappedAuthJWT(string(wrappedJWT))
+}
 
 func (t *Tmpauth) ParseWrappedAuthJWT(tokenStr string) (*CachedToken, error) {
 	t.janitorOnce.Do(func() {
