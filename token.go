@@ -2,6 +2,7 @@ package tmpauth
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -57,7 +58,12 @@ func (t *Tmpauth) ParseWrappedMicrotoken(tokenStr string) (*CachedToken, error) 
 		ClientID:   t.Config.ClientID,
 	}
 
-	wrappedJWT, err := codec.DecodeToken(microtoken.HS256Header, []byte(tokenStr))
+	tokenData, err := base64.RawURLEncoding.DecodeString(tokenStr)
+	if err != nil {
+		return nil, fmt.Errorf("tmpauth: failed to base64 decode wrapped microtoken: %w", err)
+	}
+
+	wrappedJWT, err := codec.DecodeToken(microtoken.HS256Header, tokenData)
 	if err != nil {
 		return nil, fmt.Errorf("tmpauth: failed to decode wrapped microtoken: %w", err)
 	}

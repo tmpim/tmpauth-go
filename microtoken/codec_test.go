@@ -21,7 +21,7 @@ func TestToken(t *testing.T) {
 		t.Fatalf("%+v", err)
 	}
 
-	log.Println(base64.RawStdEncoding.EncodeToString(result))
+	log.Println(base64.RawURLEncoding.EncodeToString(result))
 
 	jwt, err := codec.DecodeToken(HS256Header, result)
 	if err != nil {
