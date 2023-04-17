@@ -25,7 +25,6 @@ const (
 	FieldKID
 	FieldStateID
 	FieldCustom = FieldType(0b1110)
-	FieldEOF    = FieldType(0b1111)
 )
 
 type ExtendedType byte
@@ -103,7 +102,8 @@ func (p *Codec) EncodeToken(token []byte) ([]byte, error) {
 				}
 
 				log.Println("--------------- begin internal token ------------------")
-				internalTokenBytes, err := p.EncodeToken([]byte(internalToken))
+				var internalTokenBytes []byte
+				internalTokenBytes, err = p.EncodeToken([]byte(internalToken))
 				log.Println("---------------- end internal token -------------------")
 				if err != nil {
 					return nil, fmt.Errorf("microtoken: invalid internal token: %w", err)
@@ -142,8 +142,8 @@ func (p *Codec) EncodeToken(token []byte) ([]byte, error) {
 		result = append(result, fieldData...)
 	}
 
-	result = append(result, byte(FieldEOF))
-	result = append(result, signature...)
+	result = append(signature, result...)
+
 	log.Printf("signature is %d bytes", len(signature))
 
 	return result, nil
@@ -173,6 +173,20 @@ var (
 )
 
 func (p *Codec) DecodeToken(jwtHeader []byte, data []byte) ([]byte, error) {
+	if len(data) <= 64 {
+		return nil, errors.New("microtoken: invalid token length")
+	}
+
+	var signature []byte
+
+	if bytes.Equal(jwtHeader, HS256Header) {
+		signature = data[:32]
+		data = data[32:]
+	} else if bytes.Equal(jwtHeader, ES256Header) {
+		signature = data[:64]
+		data = data[64:]
+	}
+
 	result := orderedmap.New()
 	for {
 		var field Field
@@ -208,21 +222,17 @@ func (p *Codec) DecodeToken(jwtHeader []byte, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("microtoken: failed to marshal token: %w", err)
 	}
 
-	signature := base64.RawURLEncoding.EncodeToString(data)
-
-	wrappedToken := string(jwtHeader) + "." + base64.RawURLEncoding.EncodeToString(payload) + "." + signature
+	wrappedToken := string(jwtHeader) + "." + base64.RawURLEncoding.EncodeToString(payload) + "." +
+		base64.RawURLEncoding.EncodeToString(signature)
 	return []byte(wrappedToken), nil
 }
 
 func (p *Codec) DecodeField(data []byte) (Field, []byte, error) {
-	if len(data) < 1 {
-		return nil, nil, errors.New("microtoken: invalid field data")
+	if len(data) == 0 {
+		return nil, nil, nil
 	}
 
 	fieldType := FieldType(data[0] & 0b1111)
-	if fieldType == FieldEOF {
-		return nil, data[1:], nil
-	}
 
 	fieldGenerator, ok := codecMapping[fieldType]
 	if !ok {
