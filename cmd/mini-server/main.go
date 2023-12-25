@@ -26,7 +26,7 @@ func main() {
 		ta, ok := tmpauthInstances[configID]
 		if !ok {
 			log.Println("invalid config ID:", configID)
-			http.Error(w, "invalid config ID", http.StatusBadRequest)
+			http.Error(w, "invalid config ID", http.StatusPreconditionFailed)
 			return
 		}
 
@@ -89,7 +89,7 @@ func main() {
 		ta, ok := tmpauthInstances[configID]
 		if !ok {
 			log.Println("invalid config ID:", configID)
-			http.Error(w, "invalid config ID", http.StatusBadRequest)
+			http.Error(w, "invalid config ID", http.StatusPreconditionFailed)
 			return
 		}
 
@@ -173,7 +173,7 @@ func main() {
 		ta, ok := tmpauthInstances[configID]
 		if !ok {
 			log.Println("invalid config ID:", configID)
-			http.Error(w, "invalid config ID", http.StatusBadRequest)
+			http.Error(w, "invalid config ID", http.StatusPreconditionFailed)
 			return
 		}
 
@@ -199,7 +199,7 @@ func main() {
 		ta, ok := tmpauthInstances[configID]
 		if !ok {
 			log.Println("invalid config ID:", configID)
-			http.Error(w, "invalid config ID", http.StatusBadRequest)
+			http.Error(w, "invalid config ID", http.StatusPreconditionFailed)
 			return
 		}
 
