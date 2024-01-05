@@ -2,9 +2,7 @@ package tmpauth
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -123,7 +121,7 @@ func NewMini(config MiniConfig, next CaddyHandleFunc) (*Tmpauth, error) {
 		tmpauth: t,
 	}
 
-	t.miniClient = transport.RoundTrip
+	t.miniClient = transport.Do
 
 	return t, nil
 }
@@ -156,25 +154,17 @@ type MiniTransport struct {
 	tmpauth *Tmpauth
 }
 
-type roundTripDepthKey struct{}
+func (t *MiniTransport) Do(req *http.Request, depth int) (*http.Response, error) {
+	var body []byte
+	if req.Body != nil {
+		var err error
+		body, err = io.ReadAll(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("mini transport read body: %w", err)
+		}
 
-func (t *MiniTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	depthRaw := req.Context().Value(roundTripDepthKey{})
-	var depth *int
-	if depthRaw != nil {
-		depth = depthRaw.(*int)
+		req.Body = io.NopCloser(bytes.NewReader(body))
 	}
-
-	if depth != nil && *depth > 10 {
-		return nil, errors.New("mini transport reached maximum reauth depth")
-	}
-
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		return nil, fmt.Errorf("mini transport read body: %w", err)
-	}
-
-	req.Body = io.NopCloser(bytes.NewReader(body))
 
 	resp, err := t.base.RoundTrip(req)
 	if resp.StatusCode == http.StatusPreconditionFailed {
@@ -184,17 +174,10 @@ func (t *MiniTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			return nil, fmt.Errorf("tmpauth: mini server reauth failed %w", err)
 		}
 
-		ctx := req.Context()
-
-		if depth != nil {
-			*depth++
-		} else {
-			one := 1
-			ctx = context.WithValue(ctx, roundTripDepthKey{}, &one)
+		if body != nil {
+			req.Body = io.NopCloser(bytes.NewReader(body))
 		}
-
-		req.Body = io.NopCloser(bytes.NewReader(body))
-		return t.RoundTrip(req.WithContext(ctx))
+		return t.Do(req, depth+1)
 	}
 
 	return resp, err
