@@ -132,6 +132,8 @@ func NewMini(config MiniConfig, next CaddyHandleFunc) (*Tmpauth, error) {
 }
 
 func (t *Tmpauth) ReauthMini() error {
+	log.Println("reauthenticating with mini...")
+
 	req, err := http.NewRequest(http.MethodPut, t.miniServerHost+"/config",
 		bytes.NewReader(t.miniConfigJSON))
 	if err != nil {

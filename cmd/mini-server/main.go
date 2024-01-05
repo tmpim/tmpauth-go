@@ -106,6 +106,8 @@ func main() {
 	})
 
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("received register config request")
+
 		var config tmpauth.UnserializableConfig
 		err := json.NewDecoder(r.Body).Decode(&config)
 		if err != nil {
