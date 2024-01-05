@@ -196,6 +196,7 @@ func (t *MiniTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			ctx = context.WithValue(ctx, roundTripDepthKey{}, &one)
 		}
 
+		req.Body = io.NopCloser(bytes.NewReader(body))
 		return t.RoundTrip(req.WithContext(ctx))
 	}
 
