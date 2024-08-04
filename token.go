@@ -27,6 +27,7 @@ type CachedToken struct {
 	ValidatedAt    time.Time
 	IssuedAt       time.Time
 	UserIDs        []string // IDs that can be used in Config.AllowedUsers from IDFormats
+	RawToken       string
 	headersMutex   *sync.RWMutex
 }
 
@@ -48,9 +49,12 @@ func (w *wrappedToken) Valid() error {
 	return nil
 }
 
-const ConfigIDHeader = "X-Tmpauth-Config-Id"
-const RequestURIHeader = "X-Tmpauth-Request-URI"
-const HostHeader = "X-Tmpauth-Host"
+const (
+	ConfigIDHeader   = "X-Tmpauth-Config-Id"
+	RequestURIHeader = "X-Tmpauth-Request-URI"
+	HostHeader       = "X-Tmpauth-Host"
+	TokenHeader      = "X-Tmpauth-Token"
+)
 
 func (t *Tmpauth) ParseWrappedMicrotoken(tokenStr string) (*CachedToken, error) {
 	codec := &microtoken.Codec{
@@ -252,6 +256,7 @@ func (t *Tmpauth) ParseAuthJWT(tokenStr string, minValidationTime time.Time) (*C
 		IssuedAt:       iat,
 		StateID:        stateID,
 		ValidatedAt:    minValidationTime,
+		RawToken:       tokenStr,
 		headersMutex:   new(sync.RWMutex),
 	}
 

@@ -411,7 +411,7 @@ func (t *Tmpauth) serveWhomst(w http.ResponseWriter, token *CachedToken) (int, e
 		return http.StatusUnauthorized, fmt.Errorf("tmpauth: must be logged in to retrieve whomst database")
 	}
 
-	whomstData, err := t.Whomst()
+	whomstData, err := t.Whomst(token)
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("tmpauth: failed to retrieve whomst data: %w", err)
 	}
@@ -423,7 +423,7 @@ func (t *Tmpauth) serveWhomst(w http.ResponseWriter, token *CachedToken) (int, e
 	return 0, nil
 }
 
-func (t *Tmpauth) Whomst() (map[string]json.RawMessage, error) {
+func (t *Tmpauth) Whomst(token *CachedToken) (map[string]json.RawMessage, error) {
 	var resp *http.Response
 	var respErr error
 
@@ -433,11 +433,12 @@ func (t *Tmpauth) Whomst() (map[string]json.RawMessage, error) {
 			return nil, fmt.Errorf("invalid mini server request: %w", err)
 		}
 
-		req.Header.Set(ConfigIDHeader, t.miniConfigID)
+		req.Header.Set(TokenHeader, token.RawToken)
 
 		resp, respErr = t.miniClient(req, 0)
 	} else {
-		resp, respErr = t.HttpClient.Get("https://" + TmpAuthHost + "/whomst")
+		resp, respErr = t.HttpClient.Get("https://" + TmpAuthHost + "/whomst/tmpauth/db?token=" +
+			url.QueryEscape(token.RawToken))
 	}
 	if respErr != nil {
 		return nil, respErr

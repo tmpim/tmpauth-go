@@ -198,6 +198,13 @@ func main() {
 			return
 		}
 
+		token := r.Header.Get(tmpauth.TokenHeader)
+		if token == "" {
+			log.Println("missing tmpauth token")
+			http.Error(w, "missing tmpauth token", http.StatusBadRequest)
+			return
+		}
+
 		ta, ok := tmpauthInstances[configID]
 		if !ok {
 			log.Println("invalid config ID:", configID)
@@ -205,7 +212,14 @@ func main() {
 			return
 		}
 
-		whomstData, err := ta.Whomst()
+		cachedToken, err := ta.ParseWrappedAuthJWT(token)
+		if err != nil {
+			log.Println("error parsing token:", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		whomstData, err := ta.Whomst(cachedToken)
 		if err != nil {
 			log.Println("error getting whomst:", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
