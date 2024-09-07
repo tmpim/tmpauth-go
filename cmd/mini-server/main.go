@@ -190,6 +190,57 @@ func main() {
 		}{tmpauth.MinValidationTime().UnixMilli()})
 	})
 
+	http.HandleFunc("/header-evaluate", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+
+		var headerOption tmpauth.HeaderOption
+		err := json.NewDecoder(r.Body).Decode(&headerOption)
+		if err != nil {
+			log.Println("error decoding header option:", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		configID := r.Header.Get(tmpauth.ConfigIDHeader)
+		if configID == "" {
+			log.Println("missing config ID")
+			http.Error(w, "missing config ID", http.StatusBadRequest)
+			return
+		}
+
+		token := r.Header.Get(tmpauth.TokenHeader)
+		if token == "" {
+			log.Println("missing tmpauth token")
+			http.Error(w, "missing tmpauth token", http.StatusBadRequest)
+			return
+		}
+
+		ta, ok := tmpauthInstances[configID]
+		if !ok {
+			log.Println("invalid config ID:", configID)
+			http.Error(w, "invalid config ID", http.StatusPreconditionFailed)
+			return
+		}
+
+		cachedToken, err := ta.ParseWrappedAuthJWT(token)
+		if err != nil {
+			log.Println("error parsing token:", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		result, err := headerOption.Evaluate(cachedToken.UserDescriptor)
+		if err != nil {
+			log.Println("error evaluating header:", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(result))
+		return
+	})
+
 	http.HandleFunc("/tmpauth/whomst", func(w http.ResponseWriter, r *http.Request) {
 		configID := r.Header.Get(tmpauth.ConfigIDHeader)
 		if configID == "" {
